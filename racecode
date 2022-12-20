@@ -1,0 +1,197 @@
+local races = { 
+	["Race1"] = {
+		["Hair"] = Color3.fromRGB(161, 160, 172), -- index 1 is hair, index 2 is skin
+		["Skin"] = Color3.fromRGB(94, 89, 97)
+	},
+	["Race2"] = {
+		["Hair"] = Color3.fromRGB(143, 77, 74),
+		["Skin"] = Color3.fromRGB(157, 138, 108)
+	},
+	["Race3"] = {
+		["Hair"] = Color3.fromRGB(71, 89, 117),
+		["Skin"] = Color3.fromRGB(141, 149, 157)
+	},
+	["Race4"] = {
+		["Hair"] = Color3.fromRGB(111, 106, 106),
+		["Skin"] = Color3.fromRGB(179, 144, 103)
+	},
+	["Race5"] = {
+		["Hair"] = Color3.fromRGB(203, 177, 194),
+		["Skin"] = Color3.fromRGB(200, 175, 154)
+	}
+}
+-- tables for their face values
+local eyes = {"rbxassetid://3360374065",
+	"http://www.roblox.com/asset/?ID=3360377358",
+	"http://www.roblox.com/asset/?ID=3360376238",
+	"http://www.roblox.com/asset/?ID=3360375707",
+	"http://www.roblox.com/asset/?ID=3360375216"}
+local mouths = {"http://www.roblox.com/asset/?ID=2818152574",
+	"http://www.roblox.com/asset/?ID=2801767539",
+	"http://www.roblox.com/asset/?ID=2801767831",
+	"http://www.roblox.com/asset/?ID=2801751305",
+	"http://www.roblox.com/asset/?ID=2801778560",
+	"http://www.roblox.com/asset/?ID=2801778269",
+	"http://www.roblox.com/asset/?ID=2801751773"}
+
+local healthTable = {
+	UDim2.new(0.01, 0, 0.96, 0),
+	UDim2.new(0.37, 0, 0.92, 0)
+}
+
+local staminaTable = {
+	UDim2.new(0.01, 0, 0.92, 0),
+	UDim2.new(0.395, 0, 0.95, 0)
+}
+
+
+game:GetService("Players").PlayerAdded:Connect(function(player) -- runs when a player joins
+	local healthbar = player.PlayerGui:WaitForChild("Bars")
+	local data = player:WaitForChild("Data")
+	
+	player.CharacterAppearanceLoaded:Connect(function(char) -- runs when that player's character loads in
+		wait(0.1)
+		print("Character Running")
+		char:WaitForChild("Head") -- ensures the body has loaded in
+		
+		player:WaitForChild("Data").Stuns.PunchStun.Value = false
+		player:WaitForChild("Data").Stuns.IsRunning.Value = false
+		player:WaitForChild("Data").Stuns.IsSprinting.Value = false
+		player:WaitForChild("Data").Stuns.Fatigued.Value = false
+		player:WaitForChild("Data").Stuns.Block.Value = false
+		player:WaitForChild("Data").Stuns.HitStun.Value = false
+		player:WaitForChild("Data").Stuns.IsCrouching.Value = false
+		player:WaitForChild("Data").Stuns.IsClimbing.Value = false
+
+		if char:FindFirstChildOfClass("BodyColors") then
+			char:FindFirstChildOfClass("BodyColors"):Destroy()
+		end
+		
+		local racedata = player:WaitForChild("Data").CharacterData.Race.Value -- setting up locals
+		local racecolors = game.ReplicatedStorage.RaceSkinTones:FindFirstChild(racedata):Clone()
+		racecolors.Parent = char
+		
+
+		for i, v in pairs(char:GetChildren()) do -- this whole thing is for deleting hats and deleting hair texture/recoloring
+			if v:IsA("Accessory") then
+				--print("It is an Accessory!")
+				
+				if v.AccessoryType == Enum.AccessoryType.Hair or v:FindFirstChildOfClass("Part"):FindFirstChild("HairAttachment") then
+					if v:FindFirstChildOfClass("Part") then
+						local hair = v:FindFirstChildOfClass("Part")
+						hair:FindFirstChildOfClass("SpecialMesh").TextureId = "0"
+						hair.Color = races[player.Data.CharacterData.Race.Value]["Hair"]
+						--print("Texture Removed")
+					end
+				else
+					v:Destroy()
+					--print("Accessory Destroyed!")
+				end
+			
+			elseif v:IsA("Part") then -- applies color to skin
+				v.Color = races[player.Data.CharacterData.Race.Value]["Skin"]
+			
+			elseif v:IsA("ShirtGraphic") then -- destroys tshirts
+				v:Destroy()
+			
+			elseif v:IsA("CharacterMesh") then -- deletes any character meshes
+				v:Destroy()
+			end
+		end
+
+		char.Head.Mesh:Destroy() -- destroys any head meshes other than default and replaces with default
+		local newmesh = game.ReplicatedStorage.Mesh:Clone()
+		newmesh.Parent = char.Head
+
+		
+		local facehead = char.Head:Clone() -- makes a head under your head to make clear faces
+		char.Head:FindFirstChildOfClass("Decal"):Destroy()
+		local weld = Instance.new("Weld")
+		facehead.Parent = char.Head
+		facehead.CanCollide = false
+		weld.Part0 = char.Head
+		weld.Part1 = facehead
+		weld.Parent = facehead
+		
+		facehead:FindFirstChildOfClass("Decal").Texture = eyes[player.Data.CharacterData.Eyes.Value] -- changes your face to a random set of eyes
+
+		local mouth = facehead:FindFirstChildOfClass("Decal"):Clone() -- makes your mouth
+		mouth.Name = "mouth"
+		mouth.Parent = facehead
+		mouth.Texture = mouths[player.Data.CharacterData.Mouth.Value]
+		
+		wait(0.5)
+		local clothesset = player.Data.CharacterData.Clothing.Value -- changes your clothing
+		local shirt = game.ReplicatedStorage.Clothes:FindFirstChild(clothesset).Shirt:Clone()
+		local pants = game.ReplicatedStorage.Clothes:FindFirstChild(clothesset).Pants:Clone()
+		
+		for i, v in pairs(char:GetChildren()) do
+			if v:IsA("Shirt") then
+				v:Destroy()
+			elseif v:IsA("Pants") then
+				v:Destroy()
+			end
+		end
+		
+		shirt.Parent = char -- clones clothing sets and places them in character
+		pants.Parent = char
+		
+
+		player:WaitForChild("PlayerGui").Leaderboard.LeaderboardScroller.LocalPlayerBlock.PlayerName.Text = data.CharacterData.PlayerName.Value
+		player:WaitForChild("PlayerGui").Leaderboard.LeaderboardScroller.LocalPlayerBlock.Username.Text = player.Name
+		for i, v in pairs(game.Players:GetPlayers()) do
+			local made = false
+			if v.Name ~= player.Name then
+				for e, d in pairs(player:WaitForChild("PlayerGui").Leaderboard.LeaderboardScroller:GetChildren()) do
+					if v.Name == d.Name then
+						made = true
+					end
+				end
+
+				if made == false then
+					local blockclone = player:WaitForChild("PlayerGui").Leaderboard.LeaderboardScroller.LeaderboardHandler.PlayerBlock:Clone()
+					blockclone.Parent = player:WaitForChild("PlayerGui").Leaderboard.LeaderboardScroller
+					blockclone.Name = v.Name
+					blockclone.PlayerName.Text = v:WaitForChild("Data").CharacterData.PlayerName.Value
+					blockclone.Username.Text = v.Name
+				end
+			end
+
+			made = false
+		end
+		
+		--[[local Fsounds = game.ReplicatedStorage.FistSounds:Clone()
+		Fsounds.Parent = char.HumanoidRootPart]]
+		
+		for i, v in pairs(game.ReplicatedStorage.FistSounds:GetChildren()) do
+			local soundclone = v:Clone()
+			soundclone.Parent = char.HumanoidRootPart
+		end
+		
+		
+		for i, v in pairs(game.ReplicatedStorage.Attachments.PinAttachments:GetChildren()) do -- puts all pin attachments on body
+
+			local ParentName = v:GetAttribute("ParentType")
+			local ParentObject = ParentName and char:FindFirstChild(ParentName)
+			if ParentObject then
+				local attachclone = v:Clone()
+				attachclone.Parent = ParentObject
+			end
+		end
+		
+		for i, v in pairs(player:WaitForChild("Data").CharacterData.Inventory.Pins:GetChildren()) do
+			if v.Value ~= 0 then
+				local pin = game.ReplicatedStorage.Items.Pins:FindFirstChild(v.Name):Clone()
+				pin.Handle.Attachment.Name = v.Value
+				pin.Parent = player.Character
+			end
+		end
+		
+		char.Humanoid.DisplayName = player:WaitForChild("Data").CharacterData.PlayerName.Value
+	end)
+	wait(0.1)
+	
+	healthbar:WaitForChild("HealthBG").Position = healthTable[data.Settings.GUIlayout.Value] -- handles the bars positioning
+	healthbar:WaitForChild("StamBG").Position = staminaTable[data.Settings.GUIlayout.Value]
+end)
+
